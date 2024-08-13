@@ -1,8 +1,9 @@
 import chai from 'chai';
 import chaiHttp from 'chai-http';
+import bcrypt from 'bcrypt';
+import async from 'async';
 import server from '../index.js';
 import { users, addUser } from '../models/userModel.js';
-import bcrypt from 'bcrypt';
 
 const should = chai.should();
 
@@ -10,7 +11,6 @@ chai.use(chaiHttp);
 
 describe('POST /register', () => {
     beforeEach(() => {
-        // Очистка данных пользователей перед каждым тестом
         users.length = 0;
     });
 
@@ -23,8 +23,6 @@ describe('POST /register', () => {
                 if (err) {
                     console.error(err);
                 }
-                // console.log("Response status:", res.status);
-                // console.log("Response text:", res.text);
                 res.should.have.status(200);
                 res.redirects[0].should.include('/login');
                 done();
@@ -42,8 +40,6 @@ describe('POST /register', () => {
                 if (err) {
                     console.error(err);
                 }
-                // console.log("Response status:", res.status);
-                // console.log("Response text:", res.text);
                 res.should.have.status(400);
                 res.text.should.be.eql('User already exists');
                 done();
@@ -77,12 +73,43 @@ describe('POST /register', () => {
                 done();
             });
     });
+    it('it should handle 100 simultaneous registrations', function(done) {
+        this.timeout(10000);
 
+        const tasks = Array.from({ length: 100 }, (_, i) => {
+            return (callback) => {
+                const startTime = Date.now();
+                chai.request(server)
+                    .post('/register')
+                    .set('Content-Type', 'application/json')
+                    .send({ email: `user${i}@example.com`, password: 'testpass' })
+                    .end((err, res) => {
+                        const endTime = Date.now();
+                        const responseTime = endTime - startTime;
+                        if (err) {
+                            console.error(err);
+                        }
+                        res.should.have.status(200);
+                        callback(null, responseTime);
+                    });
+            };
+        });
 
+        async.parallel(tasks, (err, results) => {
+            if (err) {
+                return done(err);
+            }
+            const totalResponseTime = results.reduce((sum, time) => sum + time, 0);
+            const averageResponseTime = totalResponseTime / results.length;
+            console.log(results.length);
+            console.log(`Average response time per request: ${averageResponseTime.toFixed(2)} ms`);
+            results.length.should.equal(100);
+            done();
+        });
+    });
 });
 describe('POST /login', () => {
     beforeEach(() => {
-        // Очистка данных пользователей перед каждым тестом
         users.length = 0;
         const hashedPassword = bcrypt.hashSync('testpass', 10);
         addUser('testuser@example.com', hashedPassword);
