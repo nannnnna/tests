@@ -18,7 +18,7 @@ describe('POST /register', () => {
         chai.request(server)
             .post('/register')
             .set('Content-Type', 'application/json') // Убедимся, что заголовок установлен
-            .send({ username: 'testuser', password: 'testpass' })
+            .send({ email: 'testuser@example.com', password: 'testpass' })
             .end((err, res) => {
                 if (err) {
                     console.error(err);
@@ -30,14 +30,14 @@ describe('POST /register', () => {
                 done();
             });
     });
-    it('it should not register a user with the same username', (done) => {
+    it('it should not register a user with the same email', (done) => {
         const hashedPassword = bcrypt.hashSync('testpass', 10);
-        addUser('testuser', hashedPassword);
+        addUser('testuser@example.com', hashedPassword);
 
         chai.request(server)
             .post('/register')
             .set('Content-Type', 'application/json')
-            .send({ username: 'testuser', password: 'testpass' })
+            .send({ email: 'testuser@example.com', password: 'testpass' })
             .end((err, res) => {
                 if (err) {
                     console.error(err);
@@ -49,20 +49,50 @@ describe('POST /register', () => {
                 done();
             });
     });
+    it('it should not register a user with an invalid email format', (done) => {
+        chai.request(server)
+            .post('/register')
+            .set('Content-Type', 'application/json')
+            .send({ email: 'invalid-email', password: 'testpass' })
+            .end((err, res) => {
+                if (err) {
+                    console.error(err);
+                }
+                res.should.have.status(400);
+                res.text.should.be.eql('Invalid email format');
+                done();
+            });
+    });
+    it('it should not register a user without email or password', (done) => {
+        chai.request(server)
+            .post('/register')
+            .set('Content-Type', 'application/json')
+            .send({ email: '', password: '' })
+            .end((err, res) => {
+                if (err) {
+                    console.error(err);
+                }
+                res.should.have.status(400);
+                res.text.should.be.eql('Email and password are required');
+                done();
+            });
+    });
+
+
 });
 describe('POST /login', () => {
     beforeEach(() => {
         // Очистка данных пользователей перед каждым тестом
         users.length = 0;
         const hashedPassword = bcrypt.hashSync('testpass', 10);
-        addUser('testuser', hashedPassword);
+        addUser('testuser@example.com', hashedPassword);
     });
 
     it('it should login a registered user', (done) => {
         chai.request(server)
             .post('/login')
             .set('Content-Type', 'application/json')
-            .send({ username: 'testuser', password: 'testpass' })
+            .send({ email: 'testuser@example.com', password: 'testpass' })
             .end((err, res) => {
                 if (err) {
                     console.error(err);
@@ -77,7 +107,7 @@ describe('POST /login', () => {
         chai.request(server)
             .post('/login')
             .set('Content-Type', 'application/json')
-            .send({ username: 'testuser', password: 'wrongpass' })
+            .send({ email: 'testuser@example.com', password: 'wrongpass' })
             .end((err, res) => {
                 if (err) {
                     console.error(err);
@@ -92,7 +122,7 @@ describe('POST /login', () => {
         chai.request(server)
             .post('/login')
             .set('Content-Type', 'application/json')
-            .send({ username: 'nonexistent', password: 'testpass' })
+            .send({ email: 'nonexistent@example.com', password: 'testpass' })
             .end((err, res) => {
                 if (err) {
                     console.error(err);

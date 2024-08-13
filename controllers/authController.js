@@ -1,23 +1,32 @@
 import bcrypt from 'bcrypt';
 import { addUser, findUser } from '../models/userModel.js';
 
+const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(String(email).toLowerCase());
+};
+
 export const showRegisterPage = (req, res) => {
     res.render('register');
 };
 
 export const registerUser = async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).send('Username and password are required');
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).send('Email and password are required');
     }
 
-    const userExists = findUser(username);
+    if (!validateEmail(email)) {
+        return res.status(400).send('Invalid email format');
+    }
+
+    const userExists = findUser(email);
     if (userExists) {
         return res.status(400).send('User already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    addUser(username, hashedPassword);
+    addUser(email, hashedPassword);
     res.redirect('/login');
 };
 
@@ -26,8 +35,8 @@ export const showLoginPage = (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-    const { username, password } = req.body;
-    const user = findUser(username);
+    const { email, password } = req.body;
+    const user = findUser(email);
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
         return res.status(401).send('Invalid credentials');

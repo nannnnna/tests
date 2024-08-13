@@ -1,14 +1,14 @@
 export const users = [];
 
-export const addUser = (username, password) => {
-    users.push({ username, password });
+export const addUser = (email, password) => {
+    users.push({ email, password });
 };
 
-export const findUser = (username) => {
-    return users.find(user => user.username === username);
+export const findUser = (email) => {
+    return users.find(user => user.email === email);
 };
 
-export const validateUser = (username, password) => {
-    const user = findUser(username);
+export const validateUser = (email, password) => {
+    const user = findUser(email);
     return user && user.password === password;
 };
