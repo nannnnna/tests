@@ -1,8 +1,11 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import { engine } from 'express-handlebars';
+import knex from 'knex';
+import knexConfig from './knexfile.js';
 import { showRegisterPage, registerUser, showLoginPage, loginUser, showHomePage } from './controllers/authController.js';
 
+const db = knex(knexConfig.development);
 const app = express();
 const port = 3000;
 

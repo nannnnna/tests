@@ -1,3 +1,8 @@
+import knex from 'knex';
+import knexConfig from '../knexfile.js';
+
+const db = knex(knexConfig.development);
+
 export const users = [];
 
 export const addUser = (email, password) => {
